@@ -8,8 +8,9 @@ import ProgressBar from '../../components/common/ProgressBar';
 import StatusBadge from '../../components/common/StatusBadge';
 import ProductionStatusBadge from '../../components/common/ProductionStatusBadge';
 import Button from '../../components/common/Button';
+import CredentialViewer from '../../components/user/CredentialViewer';
 import { getProductionStatusConfig, getProductionProgress } from '../../utils/productionStatus';
-import { FileText, Package, Upload, Factory, CheckCircle, Truck, Gift } from 'lucide-react';
+import { FileText, Package, Upload, Factory, CheckCircle, Truck, Gift, CreditCard } from 'lucide-react';
 
 const ICON_COMPONENTS = {
   'FileText': FileText,
@@ -29,6 +30,7 @@ const UserDashboard = () => {
   const { currentUser } = useAuth();
   const [capelaoData, setCapelaoData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showCredentialModal, setShowCredentialModal] = useState(false);
 
   useEffect(() => {
     loadCapelaoData();
@@ -167,23 +169,32 @@ const UserDashboard = () => {
             height="h-6"
           />
 
+          {/* Botão Ver Credencial */}
+          <div className="mt-6">
+            <Button
+              variant="primary"
+              size="lg"
+              icon={CreditCard}
+              onClick={() => setShowCredentialModal(true)}
+              className="w-full"
+            >
+              Ver Minha Credencial
+            </Button>
+          </div>
+
           {status.status === 'expired' || status.status === 'expiring-soon' ? (
             <div className={`mt-6 p-4 ${status.bgColor} border ${status.borderColor} rounded-lg`}>
               <p className={`font-semibold ${status.textColor}`}>
-                ⚠️ Ação Necessária
+                ⚠️ Atenção
               </p>
               <p className={`text-sm ${status.textColor} mt-1`}>
                 {status.status === 'expired'
                   ? 'Sua credencial expirou. Entre em contato com a administração para renovação.'
-                  : 'Sua credencial está próxima ao vencimento. Prepare-se para atualizar seus dados.'}
+                  : 'Sua credencial está próxima ao vencimento. Entre em contato com a administração para renovação.'}
               </p>
-              <Button
-                variant="primary"
-                className="mt-4"
-                onClick={() => navigate('/profile/update')}
-              >
-                Atualizar Cadastro
-              </Button>
+              <p className={`text-xs ${status.textColor} mt-2 font-medium`}>
+                📧 Entre em contato com o departamento de capelania
+              </p>
             </div>
           ) : null}
         </Card>
@@ -306,6 +317,13 @@ const UserDashboard = () => {
           </Button>
         </div>
       </div>
+
+      {/* Modal de Credencial */}
+      <CredentialViewer
+        capelao={capelaoData}
+        isOpen={showCredentialModal}
+        onClose={() => setShowCredentialModal(false)}
+      />
     </div>
   );
 };

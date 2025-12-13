@@ -96,15 +96,7 @@ const UpdateProfile = () => {
             </p>
           </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 max-w-4xl mx-auto">
-            <p className="text-sm text-yellow-800 font-semibold mb-2">
-              ⚠️ Importante
-            </p>
-            <p className="text-sm text-yellow-700">
-              Ao atualizar seus dados, sua credencial será renovada automaticamente por mais 4 anos. 
-              Certifique-se de que todas as informações estão corretas antes de confirmar.
-            </p>
-          </div>
+          
 
           <RegistrationForm 
             onSubmit={handleSubmit} 
