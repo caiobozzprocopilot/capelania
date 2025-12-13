@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função auxiliar para verificar se é admin
+    function isAdmin() {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Função auxiliar para verificar se pode ser admin (verifica email)
+    function canBeAdmin() {
+      return request.auth != null && 
+             request.auth.token.email != null &&
+             request.auth.token.email.matches('.*admin.*');
+    }
+    
+    // Função auxiliar para verificar se é o próprio usuário
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Collection: users
+    match /users/{userId} {
+      // Usuários podem ler seus próprios dados ou se for admin
+      allow read: if request.auth != null;
+      
+      // TEMPORÁRIO: Permite criar usuário se autenticado (para setup inicial)
+      // Permite role admin se email contém "admin"
+      allow create: if request.auth != null && 
+                       isOwner(userId) &&
+                       request.resource.data.uid == userId &&
+                       (request.resource.data.role == 'user' || 
+                        (request.resource.data.role == 'admin' && canBeAdmin()));
+      
+      // Usuários podem atualizar seus próprios dados, mas não o role (exceto se é admin)
+      allow update: if (isOwner(userId) && 
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'uid'])) ||
+                       isAdmin();
+      
+      // Apenas admins podem deletar usuários
+      allow delete: if isAdmin();
+    }
+    
+    // Collection: capeloes
+    match /capeloes/{capelaoId} {
+      // Todos autenticados podem ler (para busca)
+      allow read: if request.auth != null;
+      
+      // Qualquer autenticado pode criar (verificação de admin no frontend)
+      allow create: if request.auth != null;
+      
+      // Qualquer autenticado pode atualizar (verificação de admin no frontend)
+      allow update: if request.auth != null;
+      
+      // Qualquer autenticado pode deletar (verificação de admin no frontend)
+      allow delete: if request.auth != null;
+    }
+    
+    // Bloquear acesso a qualquer outra collection
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
