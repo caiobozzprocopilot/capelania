@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllCapeloes } from '../../services/capelaoService';
+import { getAllCapeloes, deleteCapelao, updateBatchProductionStatus } from '../../services/capelaoService';
 import { useAuth } from '../../contexts/AuthContext';
-import { MessageCircle, Download, FileSpreadsheet, List, Package, CheckSquare, Square, RefreshCw } from 'lucide-react';
+import { MessageCircle, Download, FileSpreadsheet, List, Package, CheckSquare, Square, RefreshCw, Trash2 } from 'lucide-react';
 import Card from '../../components/common/Card';
 import StatusBadge from '../../components/common/StatusBadge';
 import ProductionStatusBadge from '../../components/common/ProductionStatusBadge';
@@ -16,7 +16,6 @@ import { formatDate } from '../../utils/formatters';
 import { getValidityStatus } from '../../utils/dateHelpers';
 import { addDataPrefix } from '../../utils/imageHelpers';
 import { exportToExcelWithPhotos, exportToExcelOnly } from '../../utils/excelExport';
-import { updateBatchProductionStatus } from '../../services/capelaoService';
 import { PRODUCTION_STATUS } from '../../utils/productionStatus';
 
 const AdminDashboard = () => {
@@ -33,6 +32,7 @@ const AdminDashboard = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [activeTab, setActiveTab] = useState('lista'); // 'lista' ou 'lotes'
   const [selectedBatches, setSelectedBatches] = useState([]); // IDs dos lotes selecionados
+  const [deletingId, setDeletingId] = useState(null); // ID do capelão sendo deletado
 
   useEffect(() => {
     if (!isAdmin()) {
@@ -216,6 +216,35 @@ const AdminDashboard = () => {
       loadData(); // Recarrega os dados
     } else {
       alert(`Erro: ${result.error}`);
+    }
+  };
+
+  const handleDeleteCapelao = async (capelaoId, nomeCompleto) => {
+    const confirmDelete = window.confirm(
+      `Tem certeza que deseja remover ${nomeCompleto}?\n\n` +
+      `Esta ação irá:\n` +
+      `• Deletar o cadastro do capelão\n` +
+      `• Remover a conta de acesso ao sistema\n\n` +
+      `Esta ação não pode ser desfeita!`
+    );
+
+    if (!confirmDelete) return;
+
+    setDeletingId(capelaoId);
+
+    try {
+      const result = await deleteCapelao(capelaoId);
+
+      if (result.success) {
+        alert('Capelão removido com sucesso!');
+        loadData(); // Recarrega os dados
+      } else {
+        alert(`Erro ao remover capelão: ${result.error}`);
+      }
+    } catch (error) {
+      alert(`Erro inesperado: ${error.message}`);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -500,19 +529,33 @@ const AdminDashboard = () => {
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleWhatsApp(capelao.telefone)}
-                        className="inline-flex items-center justify-center w-9 h-9 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors mr-3"
-                        title="Contatar via WhatsApp"
-                      >
-                        <MessageCircle className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => navigate(`/admin/capelao/${capelao.id}`)}
-                        className="text-primary-600 hover:text-primary-900"
-                      >
-                        Ver Detalhes
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleWhatsApp(capelao.telefone)}
+                          className="inline-flex items-center justify-center w-9 h-9 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+                          title="Contatar via WhatsApp"
+                        >
+                          <MessageCircle className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => navigate(`/admin/capelao/${capelao.id}`)}
+                          className="text-primary-600 hover:text-primary-900"
+                        >
+                          Ver Detalhes
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCapelao(capelao.id, capelao.nomeCompleto)}
+                          disabled={deletingId === capelao.id}
+                          className="inline-flex items-center justify-center w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-2"
+                          title="Remover capelão"
+                        >
+                          {deletingId === capelao.id ? (
+                            <RefreshCw className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

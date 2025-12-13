@@ -145,16 +145,6 @@ export const updateCapelao = async (id, data) => {
 };
 
 // Deletar capelão
-export const deleteCapelao = async (id) => {
-  try {
-    await deleteDoc(doc(db, 'capeloes', id));
-    return { success: true };
-  } catch (error) {
-    console.error('Erro ao deletar capelão:', error);
-    return { success: false, error: error.message };
-  }
-};
-
 // Buscar capelões por status de validade
 export const getCapeloesByStatus = async (status) => {
   try {
@@ -279,6 +269,41 @@ export const updateBatchProductionStatus = async (capelaoIds, newStatus, observa
     };
   } catch (error) {
     console.error('Erro ao atualizar status em lote:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Deletar capelão
+export const deleteCapelao = async (capelaoId) => {
+  try {
+    // Buscar dados do capelão para pegar o userId
+    const capelao = await getCapelao(capelaoId);
+    if (!capelao.success) {
+      return { success: false, error: 'Capelão não encontrado' };
+    }
+
+    // Deletar documento do Firestore
+    const capelaoRef = doc(db, 'capeloes', capelaoId);
+    await deleteDoc(capelaoRef);
+
+    // Deletar conta de autenticação (se existir userId)
+    if (capelao.data.userId) {
+      try {
+        // Buscar documento do usuário na coleção 'users'
+        const userRef = doc(db, 'users', capelao.data.userId);
+        await deleteDoc(userRef);
+      } catch (error) {
+        console.warn('Erro ao deletar documento do usuário:', error);
+      }
+    }
+
+    return { 
+      success: true, 
+      message: 'Capelão removido com sucesso',
+      deletedId: capelaoId
+    };
+  } catch (error) {
+    console.error('Erro ao deletar capelão:', error);
     return { success: false, error: error.message };
   }
 };
