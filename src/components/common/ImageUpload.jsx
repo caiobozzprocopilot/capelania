@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { validateImageFile } from '../../utils/validators';
-import { compressImageFile, stripDataPrefix, addDataPrefix } from '../../utils/imageHelpers';
+import { stripDataPrefix, addDataPrefix } from '../../utils/imageHelpers';
+import ImageCropModal from './ImageCropModal';
 
 const ImageUpload = ({ 
   label = 'Foto 3x4',
@@ -12,13 +13,14 @@ const ImageUpload = ({
   const [preview, setPreview] = useState(value ? addDataPrefix(value) : null);
   const [uploading, setUploading] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [tempImageSrc, setTempImageSrc] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    setUploading(true);
     setLocalError('');
 
     try {
@@ -26,30 +28,35 @@ const ImageUpload = ({
       const fileValidation = validateImageFile(file);
       if (!fileValidation.valid) {
         setLocalError(fileValidation.error);
-        setUploading(false);
         return;
       }
 
-      // Comprime a imagem
-      const { dataUrl } = await compressImageFile(file, 800, 0.8);
-      const base64 = stripDataPrefix(dataUrl);
-      
-      // Valida tamanho final
-      if (base64.length > 950000) {
-        setLocalError('A imagem ficou muito grande. Tente tirar mais perto ou com menor resolução.');
-        setUploading(false);
-        return;
-      }
-
-      // Atualiza preview e chama onChange com base64 puro
-      setPreview(dataUrl);
-      onChange(base64, 'image/jpeg');
-      setUploading(false);
+      // Carrega a imagem para preview no crop modal
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTempImageSrc(reader.result);
+        setShowCropModal(true);
+      };
+      reader.readAsDataURL(file);
     } catch (error) {
-      console.error('Erro ao processar imagem:', error);
-      setLocalError('Não foi possível processar a imagem.');
+      console.error('Erro ao carregar imagem:', error);
+      setLocalError('Não foi possível carregar a imagem.');
       setUploading(false);
     }
+  };
+
+  const handleCropComplete = (base64, mimeType) => {
+    // Valida tamanho final
+    if (base64.length > 950000) {
+      setLocalError('A imagem ficou muito grande. Tente com menos zoom ou outra imagem.');
+      return;
+    }
+
+    const dataUrl = addDataPrefix(base64, mimeType);
+    setPreview(dataUrl);
+    onChange(base64, mimeType);
+    setShowCropModal(false);
+    setTempImageSrc(null);
   };
 
   const handleRemove = () => {
@@ -132,6 +139,18 @@ const ImageUpload = ({
       {displayError && (
         <p className="mt-2 text-sm text-red-600">{displayError}</p>
       )}
+
+      {/* Modal de Crop */}
+      <ImageCropModal
+        isOpen={showCropModal}
+        onClose={() => {
+          setShowCropModal(false);
+          setTempImageSrc(null);
+        }}
+        imageSrc={tempImageSrc}
+        onCropComplete={handleCropComplete}
+        aspectRatio={3 / 4}
+      />
     </div>
   );
 };

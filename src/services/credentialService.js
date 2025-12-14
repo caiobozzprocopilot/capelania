@@ -4,6 +4,7 @@
  */
 
 import { addDataPrefix } from '../utils/imageHelpers';
+import jsPDF from 'jspdf';
 
 /**
  * Carrega uma imagem e retorna como Promise
@@ -159,38 +160,50 @@ export const generateFullCredential = async (capelaoData) => {
 };
 
 /**
- * Baixa a credencial como PDF ou ZIP com ambas as imagens
+ * Converte blob para data URL
  */
-export const downloadCredential = async (capelaoData, format = 'images') => {
-  const { front, back } = await generateFullCredential(capelaoData);
+const blobToDataURL = (blob) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
 
-  if (format === 'images') {
-    // Baixar como duas imagens separadas automaticamente
-    const frontUrl = URL.createObjectURL(front);
-    const backUrl = URL.createObjectURL(back);
+/**
+ * Baixa a credencial como PDF único com frente e verso
+ */
+export const downloadCredential = async (capelaoData) => {
+  try {
+    const { front, back } = await generateFullCredential(capelaoData);
 
-    // Download frente
-    const aFront = document.createElement('a');
-    aFront.href = frontUrl;
-    aFront.download = `credencial-${capelaoData.nomeCompleto.replace(/\s+/g, '-')}-frente.png`;
-    document.body.appendChild(aFront);
-    aFront.click();
-    document.body.removeChild(aFront);
+    // Converte blobs para data URLs
+    const frontDataUrl = await blobToDataURL(front);
+    const backDataUrl = await blobToDataURL(back);
 
-    // Download verso (com delay maior para garantir)
-    setTimeout(() => {
-      const aBack = document.createElement('a');
-      aBack.href = backUrl;
-      aBack.download = `credencial-${capelaoData.nomeCompleto.replace(/\s+/g, '-')}-verso.png`;
-      document.body.appendChild(aBack);
-      aBack.click();
-      document.body.removeChild(aBack);
+    // Criar PDF no formato de cartão (85.6mm x 54mm - tamanho cartão de crédito)
+    // Usando 300 DPI para impressão: 85.6mm = 1011px, 54mm = 638px
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: [85.6, 54]
+    });
 
-      // Limpar URLs após downloads
-      setTimeout(() => {
-        URL.revokeObjectURL(frontUrl);
-        URL.revokeObjectURL(backUrl);
-      }, 1000);
-    }, 500);
+    // Adiciona a frente (primeira página)
+    pdf.addImage(frontDataUrl, 'PNG', 0, 0, 85.6, 54, undefined, 'FAST');
+
+    // Adiciona nova página para o verso
+    pdf.addPage();
+    pdf.addImage(backDataUrl, 'PNG', 0, 0, 85.6, 54, undefined, 'FAST');
+
+    // Faz o download do PDF
+    const fileName = `credencial-${capelaoData.nomeCompleto.replace(/\s+/g, '-')}.pdf`;
+    pdf.save(fileName);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Erro ao gerar PDF:', error);
+    return { success: false, error: error.message };
   }
 };
