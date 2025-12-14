@@ -1,0 +1,25 @@
+<!-- Ícone Capelania 192x192 -->
+<svg width="192" height="192" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fundo azul -->
+  <rect width="192" height="192" fill="#2563eb" rx="32"/>
+  
+  <!-- Símbolo de capelania (mãos com paz) -->
+  <g transform="translate(96, 96) scale(1.8)">
+    <!-- Círculo da paz -->
+    <circle cx="0" cy="-8" r="18" stroke="#ffffff" stroke-width="3" fill="none"/>
+    <line x1="0" y1="-26" x2="0" y2="10" stroke="#ffffff" stroke-width="3"/>
+    <line x1="-12.7" y1="0.3" x2="12.7" y2="0.3" stroke="#ffffff" stroke-width="3"/>
+    <line x1="-10.4" y1="-17.4" x2="0" y2="-8" stroke="#ffffff" stroke-width="3"/>
+    <line x1="10.4" y1="-17.4" x2="0" y2="-8" stroke="#ffffff" stroke-width="3"/>
+    
+    <!-- Mão esquerda -->
+    <path d="M -25,15 Q -25,10 -22,10 L -15,10 Q -12,10 -12,13 L -12,22 Q -12,25 -15,25 L -22,25 Q -25,25 -25,22 Z" 
+          fill="#ffffff"/>
+    <path d="M -23,15 L -23,8 Q -23,5 -20,5 L -17,5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+    
+    <!-- Mão direita -->
+    <path d="M 25,15 Q 25,10 22,10 L 15,10 Q 12,10 12,13 L 12,22 Q 12,25 15,25 L 22,25 Q 25,25 25,22 Z" 
+          fill="#ffffff"/>
+    <path d="M 23,15 L 23,8 Q 23,5 20,5 L 17,5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>
