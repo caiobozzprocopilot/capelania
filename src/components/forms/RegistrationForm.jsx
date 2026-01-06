@@ -45,6 +45,7 @@ const RegistrationForm = ({ onSubmit, initialData = null, isUpdate = false, isEd
     confirmarSenha: '',
     fotoB64: initialData?.fotoB64 || null,
     fotoMime: initialData?.fotoMime || 'image/jpeg',
+    isRenovacao: initialData?.isRenovacao || null,
   });
 
   const [errors, setErrors] = useState({});
@@ -199,6 +200,11 @@ const RegistrationForm = ({ onSubmit, initialData = null, isUpdate = false, isEd
       newErrors.email = 'Email inválido';
     }
 
+    // Renovação
+    if (formData.isRenovacao === null) {
+      newErrors.isRenovacao = 'Você deve informar se é renovação ou não';
+    }
+
     // Senha (apenas para novos cadastros)
     if (!isUpdate) {
       if (!formData.senha) {
@@ -340,6 +346,81 @@ const RegistrationForm = ({ onSubmit, initialData = null, isUpdate = false, isEd
               maxLength={13}
               required
             />
+          </div>
+        </div>
+
+        {/* Renovação */}
+        <div className="mb-8">
+          <h4 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
+            Tipo de Cadastro
+          </h4>
+          
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+            <label className="block text-sm font-semibold text-gray-900 mb-4">
+              Este cadastro é uma renovação?
+              <span className="text-red-500 ml-1">*</span>
+            </label>
+            
+            <div className="flex gap-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData(prev => ({ ...prev, isRenovacao: true }));
+                  if (errors.isRenovacao) {
+                    setErrors(prev => ({ ...prev, isRenovacao: '' }));
+                  }
+                }}
+                className={`flex-1 py-4 px-6 rounded-lg font-semibold transition-all ${
+                  formData.isRenovacao === true
+                    ? 'bg-green-600 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-green-500'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  {formData.isRenovacao === true && (
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  <span>SIM - Renovação</span>
+                </div>
+                <p className="text-xs mt-2 opacity-80">Já possui credencial anterior</p>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData(prev => ({ ...prev, isRenovacao: false }));
+                  if (errors.isRenovacao) {
+                    setErrors(prev => ({ ...prev, isRenovacao: '' }));
+                  }
+                }}
+                className={`flex-1 py-4 px-6 rounded-lg font-semibold transition-all ${
+                  formData.isRenovacao === false
+                    ? 'bg-blue-600 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-500'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  {formData.isRenovacao === false && (
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  <span>NÃO - Novo Cadastro</span>
+                </div>
+                <p className="text-xs mt-2 opacity-80">Primeira vez solicitando credencial</p>
+              </button>
+            </div>
+            
+            {errors.isRenovacao && (
+              <p className="mt-3 text-sm text-red-600 font-semibold flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {errors.isRenovacao}
+              </p>
+            )}
           </div>
         </div>
 

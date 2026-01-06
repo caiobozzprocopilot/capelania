@@ -28,6 +28,7 @@ const AdminDashboard = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCidade, setFilterCidade] = useState('all');
   const [filterIgreja, setFilterIgreja] = useState('all');
+  const [filterRenovacao, setFilterRenovacao] = useState('all');
   const [showExportModal, setShowExportModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [activeTab, setActiveTab] = useState('lista'); // 'lista' ou 'lotes'
@@ -91,8 +92,11 @@ const AdminDashboard = () => {
     const matchesStatus = filterStatus === 'all' || getValidityStatus(capelao.expirationDate).status === filterStatus;
     const matchesCidade = filterCidade === 'all' || capelao.cidadeAtual === filterCidade;
     const matchesIgreja = filterIgreja === 'all' || capelao.igreja === filterIgreja;
+    const matchesRenovacao = filterRenovacao === 'all' || 
+                             (filterRenovacao === 'renovacao' && capelao.isRenovacao === true) ||
+                             (filterRenovacao === 'novo' && capelao.isRenovacao === false);
 
-    return matchesSearch && matchesStatus && matchesCidade && matchesIgreja;
+    return matchesSearch && matchesStatus && matchesCidade && matchesIgreja && matchesRenovacao;
   });
 
   // Extrair cidades únicas
@@ -384,7 +388,7 @@ const AdminDashboard = () => {
 
         {/* Filtros e Busca */}
         <Card className="mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <input
                 type="text"
@@ -406,6 +410,18 @@ const AdminDashboard = () => {
                 <option value="warning">Atenção</option>
                 <option value="expiring-soon">Próximo ao Vencimento</option>
                 <option value="expired">Expirados</option>
+              </select>
+            </div>
+
+            <div>
+              <select
+                value={filterRenovacao}
+                onChange={(e) => setFilterRenovacao(e.target.value)}
+                className="input-field"
+              >
+                <option value="all">Todos os Tipos</option>
+                <option value="renovacao">🔄 Renovação</option>
+                <option value="novo">✨ Novo Cadastro</option>
               </select>
             </div>
 
@@ -438,12 +454,13 @@ const AdminDashboard = () => {
         </Card>
 
         {/* Informação de Filtros Aplicados */}
-        {(searchTerm || filterStatus !== 'all' || filterCidade !== 'all' || filterIgreja !== 'all') && (
+        {(searchTerm || filterStatus !== 'all' || filterCidade !== 'all' || filterIgreja !== 'all' || filterRenovacao !== 'all') && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
               <strong>Filtros aplicados:</strong> Exibindo {filteredCapeloes.length} de {capeloes.length} registros
               {searchTerm && ` | Busca: "${searchTerm}"`}
               {filterStatus !== 'all' && ` | Status: ${filterStatus}`}
+              {filterRenovacao !== 'all' && ` | Tipo: ${filterRenovacao === 'renovacao' ? 'Renovação' : 'Novo Cadastro'}`}
               {filterCidade !== 'all' && ` | Cidade: ${filterCidade}`}
               {filterIgreja !== 'all' && ` | Igreja: ${filterIgreja}`}
             </p>
@@ -508,6 +525,18 @@ const AdminDashboard = () => {
                       </div>
                       <div className="text-sm text-gray-500">
                         {capelao.email}
+                      </div>
+                      <div className="mt-1">
+                        {capelao.isRenovacao === true && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                            🔄 Renovação
+                          </span>
+                        )}
+                        {capelao.isRenovacao === false && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            ✨ Novo
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
