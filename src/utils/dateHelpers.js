@@ -1,7 +1,18 @@
 // Calcula idade a partir da data de nascimento
 export const calculateAge = (birthDate) => {
   const today = new Date();
-  const birth = new Date(birthDate);
+  
+  // Parse da data sem problema de timezone
+  let birth;
+  const dateStr = birthDate.toString();
+  if (dateStr.includes('-')) {
+    // Formato YYYY-MM-DD - criar data no fuso local
+    const [year, month, day] = dateStr.split('T')[0].split('-');
+    birth = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  } else {
+    birth = new Date(birthDate);
+  }
+  
   let age = today.getFullYear() - birth.getFullYear();
   const monthDiff = today.getMonth() - birth.getMonth();
   
@@ -14,7 +25,16 @@ export const calculateAge = (birthDate) => {
 
 // Calcula data de expiração (4 anos após o registro)
 export const calculateExpirationDate = (registrationDate) => {
-  const date = new Date(registrationDate);
+  // Parse da data sem problema de timezone
+  let date;
+  const dateStr = registrationDate.toString();
+  if (dateStr.includes('-')) {
+    // Formato YYYY-MM-DD - criar data no fuso local
+    const [year, month, day] = dateStr.split('T')[0].split('-');
+    date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  } else {
+    date = new Date(registrationDate);
+  }
   date.setFullYear(date.getFullYear() + 4);
   return date;
 };
@@ -22,7 +42,16 @@ export const calculateExpirationDate = (registrationDate) => {
 // Calcula dias restantes até expiração
 export const daysUntilExpiration = (expirationDate) => {
   const today = new Date();
-  const expiration = new Date(expirationDate);
+  // Parse da data sem problema de timezone
+  let expiration;
+  const dateStr = expirationDate.toString();
+  if (dateStr.includes('-')) {
+    // Formato YYYY-MM-DD - criar data no fuso local
+    const [year, month, day] = dateStr.split('T')[0].split('-');
+    expiration = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  } else {
+    expiration = new Date(expirationDate);
+  }
   const diffTime = expiration - today;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
@@ -31,7 +60,16 @@ export const daysUntilExpiration = (expirationDate) => {
 // Calcula meses restantes até expiração
 export const monthsUntilExpiration = (expirationDate) => {
   const today = new Date();
-  const expiration = new Date(expirationDate);
+  // Parse da data sem problema de timezone
+  let expiration;
+  const dateStr = expirationDate.toString();
+  if (dateStr.includes('-')) {
+    // Formato YYYY-MM-DD - criar data no fuso local
+    const [year, month, day] = dateStr.split('T')[0].split('-');
+    expiration = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  } else {
+    expiration = new Date(expirationDate);
+  }
   
   let months = (expiration.getFullYear() - today.getFullYear()) * 12;
   months += expiration.getMonth() - today.getMonth();
@@ -41,8 +79,24 @@ export const monthsUntilExpiration = (expirationDate) => {
 
 // Calcula porcentagem de validade decorrida
 export const calculateValidityPercentage = (registrationDate, expirationDate) => {
-  const start = new Date(registrationDate);
-  const end = new Date(expirationDate);
+  // Parse das datas sem problema de timezone
+  let start, end;
+  const regDateStr = registrationDate.toString();
+  if (regDateStr.includes('-')) {
+    const [year, month, day] = regDateStr.split('T')[0].split('-');
+    start = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  } else {
+    start = new Date(registrationDate);
+  }
+  
+  const expDateStr = expirationDate.toString();
+  if (expDateStr.includes('-')) {
+    const [year, month, day] = expDateStr.split('T')[0].split('-');
+    end = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  } else {
+    end = new Date(expirationDate);
+  }
+  
   const today = new Date();
   
   const totalTime = end - start;

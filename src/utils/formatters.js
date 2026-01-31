@@ -112,6 +112,14 @@ export const formatRG = (value) => {
 // Formatação de data para exibição
 export const formatDate = (date) => {
   if (!date) return '';
+  // Parse da data sem problema de timezone
+  const dateStr = date.toString();
+  if (dateStr.includes('-')) {
+    // Formato YYYY-MM-DD - adiciona horário para evitar problema de timezone
+    const [year, month, day] = dateStr.split('T')[0].split('-');
+    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return d.toLocaleDateString('pt-BR');
+  }
   const d = new Date(date);
   return d.toLocaleDateString('pt-BR');
 };
@@ -119,7 +127,27 @@ export const formatDate = (date) => {
 // Formatação de data para input
 export const formatDateForInput = (date) => {
   if (!date) return '';
-  const d = new Date(date);
+  
+  // Se já está no formato correto YYYY-MM-DD, retorna direto
+  const dateStr = date.toString();
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateStr;
+  }
+  
+  // Parse da data sem problema de timezone
+  let d;
+  if (dateStr.includes('-')) {
+    // Formato YYYY-MM-DD ou ISO - criar data no fuso local
+    const [year, month, day] = dateStr.split('T')[0].split('-');
+    if (year && month && day) {
+      d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    } else {
+      d = new Date(date);
+    }
+  } else {
+    d = new Date(date);
+  }
+  
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');

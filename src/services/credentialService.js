@@ -105,7 +105,15 @@ export const generateCredentialBack = async (capelaoData) => {
         return new Date(dateValue.seconds * 1000).toLocaleDateString('pt-BR');
       }
       
-      // Se for ISO String ou Date
+      // Se for ISO String ou Date - corrigir timezone
+      const dateStr = dateValue.toString();
+      if (dateStr.includes('-')) {
+        // Formato YYYY-MM-DD - criar data no fuso local
+        const [year, month, day] = dateStr.split('T')[0].split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        return date.toLocaleDateString('pt-BR');
+      }
+      
       const date = new Date(dateValue);
       return !isNaN(date.getTime()) ? date.toLocaleDateString('pt-BR') : '';
     };
