@@ -9,6 +9,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import ProductionStatusBadge from '../../components/common/ProductionStatusBadge';
 import Button from '../../components/common/Button';
 import CredentialViewer from '../../components/user/CredentialViewer';
+import EventEnrollment from '../../components/user/EventEnrollment';
 import { getProductionStatusConfig, getProductionProgress } from '../../utils/productionStatus';
 import { FileText, Package, Upload, Factory, CheckCircle, Truck, Gift, CreditCard } from 'lucide-react';
 
@@ -304,6 +305,11 @@ const UserDashboard = () => {
               </p>
             </div>
           </Card>
+        </div>
+
+        {/* Eventos/Cursos */}
+        <div className="mb-6">
+          <EventEnrollment capelaoCustomId={capelaoData.customId} />
         </div>
 
         {/* Botão de Atualização */}

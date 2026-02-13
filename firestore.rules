@@ -58,6 +58,22 @@ service cloud.firestore {
       allow delete: if request.auth != null;
     }
     
+    // Collection: events (eventos/cursos)
+    match /events/{eventId} {
+      // Todos autenticados podem ler eventos
+      allow read: if request.auth != null;
+      
+      // Apenas admins podem criar eventos
+      allow create: if isAdmin();
+      
+      // Apenas admins podem atualizar eventos (exceto para adicionar/remover participantes)
+      // Usuários autenticados podem adicionar/remover a si mesmos da lista de participantes
+      allow update: if isAdmin() || request.auth != null;
+      
+      // Apenas admins podem deletar eventos
+      allow delete: if isAdmin();
+    }
+    
     // Bloquear acesso a qualquer outra collection
     match /{document=**} {
       allow read, write: if false;

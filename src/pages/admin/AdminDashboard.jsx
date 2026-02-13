@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllCapeloes, deleteCapelao, updateBatchProductionStatus } from '../../services/capelaoService';
+import { getAllEvents, createEvent, updateEvent, deleteEvent } from '../../services/eventService';
 import { useAuth } from '../../contexts/AuthContext';
-import { MessageCircle, Download, FileSpreadsheet, List, Package, CheckSquare, Square, RefreshCw, Trash2 } from 'lucide-react';
+import { MessageCircle, Download, FileSpreadsheet, List, Package, CheckSquare, Square, RefreshCw, Trash2, Calendar, Plus } from 'lucide-react';
 import Card from '../../components/common/Card';
 import StatusBadge from '../../components/common/StatusBadge';
 import ProductionStatusBadge from '../../components/common/ProductionStatusBadge';
@@ -12,6 +13,8 @@ import ProgressChart from '../../components/dashboard/ProgressChart';
 import DonutChart from '../../components/dashboard/DonutChart';
 import ExportModal from '../../components/admin/ExportModal';
 import ProductionStatusModal from '../../components/admin/ProductionStatusModal';
+import EventModal from '../../components/admin/EventModal';
+import EventParticipantsModal from '../../components/admin/EventParticipantsModal';
 import { formatDate } from '../../utils/formatters';
 import { getValidityStatus } from '../../utils/dateHelpers';
 import { addDataPrefix } from '../../utils/imageHelpers';
@@ -22,6 +25,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const [capeloes, setCapeloes] = useState([]);
+  const [events, setEvents] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,9 +33,13 @@ const AdminDashboard = () => {
   const [filterCidade, setFilterCidade] = useState('all');
   const [filterIgreja, setFilterIgreja] = useState('all');
   const [filterRenovacao, setFilterRenovacao] = useState('all');
+  const [filterEvento, setFilterEvento] = useState('all');
   const [showExportModal, setShowExportModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('lista'); // 'lista' ou 'lotes'
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [showParticipantsModal, setShowParticipantsModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [activeTab, setActiveTab] = useState('lista'); // 'lista', 'lotes' ou 'eventos'
   const [selectedBatches, setSelectedBatches] = useState([]); // IDs dos lotes selecionados
   const [deletingId, setDeletingId] = useState(null); // ID do capelão sendo deletado
 
@@ -75,6 +83,12 @@ const AdminDashboard = () => {
         setCapeloes([]);
         setStats({ total: 0, active: 0, expiringSoon: 0, expired: 0 });
       }
+
+      // Busca eventos
+      const eventsResult = await getAllEvents();
+      if (eventsResult.success) {
+        setEvents(eventsResult.data);
+      }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       setCapeloes([]);
@@ -95,8 +109,17 @@ const AdminDashboard = () => {
     const matchesRenovacao = filterRenovacao === 'all' || 
                              (filterRenovacao === 'renovacao' && capelao.isRenovacao === true) ||
                              (filterRenovacao === 'novo' && capelao.isRenovacao === false);
+    
+    // Filtro por evento
+    let matchesEvento = true;
+    if (filterEvento !== 'all') {
+      const selectedEvent = events.find(e => e.id === filterEvento);
+      if (selectedEvent) {
+        matchesEvento = selectedEvent.participants && selectedEvent.participants.includes(capelao.customId);
+      }
+    }
 
-    return matchesSearch && matchesStatus && matchesCidade && matchesIgreja && matchesRenovacao;
+    return matchesSearch && matchesStatus && matchesCidade && matchesIgreja && matchesRenovacao && matchesEvento;
   });
 
   // Extrair cidades únicas
@@ -241,15 +264,46 @@ const AdminDashboard = () => {
 
       if (result.success) {
         alert('Capelão removido com sucesso!');
-        loadData(); // Recarrega os dados
+        loadData(); // Recarrega a lista
       } else {
         alert(`Erro ao remover capelão: ${result.error}`);
       }
     } catch (error) {
-      alert(`Erro inesperado: ${error.message}`);
+      console.error('Erro ao deletar capelão:', error);
+      alert('Erro ao remover capelão. Tente novamente.');
     } finally {
       setDeletingId(null);
     }
+  };
+
+  // Funções de gerenciamento de eventos
+  const handleCreateEvent = async (eventData) => {
+    const result = await createEvent(eventData);
+    if (result.success) {
+      alert('Evento criado com sucesso!');
+      loadData();
+    } else {
+      alert('Erro ao criar evento: ' + result.error);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId, eventName) => {
+    if (!confirm(`Tem certeza que deseja deletar o evento "${eventName}"?`)) {
+      return;
+    }
+
+    const result = await deleteEvent(eventId);
+    if (result.success) {
+      alert('Evento deletado com sucesso!');
+      loadData();
+    } else {
+      alert('Erro ao deletar evento: ' + result.error);
+    }
+  };
+
+  const handleViewParticipants = (event) => {
+    setSelectedEvent(event);
+    setShowParticipantsModal(true);
   };
 
   if (loading) {
@@ -382,13 +436,29 @@ const AdminDashboard = () => {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => setActiveTab('eventos')}
+                className={`${
+                  activeTab === 'eventos'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2`}
+              >
+                <Calendar className="w-4 h-4" />
+                Eventos/Cursos
+                {events.length > 0 && (
+                  <span className="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
+                    {events.length}
+                  </span>
+                )}
+              </button>
             </nav>
           </div>
         </div>
 
         {/* Filtros e Busca */}
         <Card className="mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div>
               <input
                 type="text"
@@ -427,6 +497,21 @@ const AdminDashboard = () => {
 
             <div>
               <select
+                value={filterEvento}
+                onChange={(e) => setFilterEvento(e.target.value)}
+                className="input-field"
+              >
+                <option value="all">Todos os Eventos</option>
+                {events.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.name} ({event.participants ? event.participants.length : 0})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <select
                 value={filterCidade}
                 onChange={(e) => setFilterCidade(e.target.value)}
                 className="input-field"
@@ -454,13 +539,14 @@ const AdminDashboard = () => {
         </Card>
 
         {/* Informação de Filtros Aplicados */}
-        {(searchTerm || filterStatus !== 'all' || filterCidade !== 'all' || filterIgreja !== 'all' || filterRenovacao !== 'all') && (
+        {(searchTerm || filterStatus !== 'all' || filterCidade !== 'all' || filterIgreja !== 'all' || filterRenovacao !== 'all' || filterEvento !== 'all') && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
               <strong>Filtros aplicados:</strong> Exibindo {filteredCapeloes.length} de {capeloes.length} registros
               {searchTerm && ` | Busca: "${searchTerm}"`}
               {filterStatus !== 'all' && ` | Status: ${filterStatus}`}
               {filterRenovacao !== 'all' && ` | Tipo: ${filterRenovacao === 'renovacao' ? 'Renovação' : 'Novo Cadastro'}`}
+              {filterEvento !== 'all' && ` | Evento: ${events.find(e => e.id === filterEvento)?.name}`}
               {filterCidade !== 'all' && ` | Cidade: ${filterCidade}`}
               {filterIgreja !== 'all' && ` | Igreja: ${filterIgreja}`}
             </p>
@@ -598,7 +684,7 @@ const AdminDashboard = () => {
             )}
           </div>
         </Card>
-        ) : (
+        ) : activeTab === 'lotes' ? (
           /* Visualização de Lotes */
           <div className="space-y-6">
             {/* Cabeçalho dos Lotes */}
@@ -795,7 +881,101 @@ const AdminDashboard = () => {
               </Card>
             )}
           </div>
-        )}
+        ) : activeTab === 'eventos' ? (
+          /* Aba de Eventos */
+          <div className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Gerenciar Eventos/Cursos</h2>
+              <Button
+                onClick={() => setShowEventModal(true)}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Criar Evento
+              </Button>
+            </div>
+
+            {events.length === 0 ? (
+              <Card>
+                <div className="text-center py-12">
+                  <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                  <p className="text-gray-500 mb-4">Nenhum evento criado ainda</p>
+                  <Button onClick={() => setShowEventModal(true)} size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Primeiro Evento
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {events.map(event => (
+                  <Card 
+                    key={event.id}
+                    className="hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => handleViewParticipants(event)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {event.name}
+                          </h3>
+                          {event.isActive ? (
+                            <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                              Ativo
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">
+                              Inativo
+                            </span>
+                          )}
+                        </div>
+
+                        {event.description && (
+                          <p className="text-gray-600 text-sm mb-3">{event.description}</p>
+                        )}
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-500">Local</p>
+                            <p className="font-medium">{event.location}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Data de Início</p>
+                            <p className="font-medium">{formatDate(event.startDate)}</p>
+                          </div>
+                          {event.endDate && (
+                            <div>
+                              <p className="text-gray-500">Data de Término</p>
+                              <p className="font-medium">{formatDate(event.endDate)}</p>
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-gray-500">Participantes</p>
+                            <p className="font-medium text-primary-600 cursor-pointer hover:underline">
+                              {event.participants ? event.participants.length : 0} inscritos
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="ml-4" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleDeleteEvent(event.id, event.name)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
 
       {/* Modal de Exportação */}
@@ -812,6 +992,20 @@ const AdminDashboard = () => {
         onClose={() => setShowStatusModal(false)}
         selectedCapeloes={getSelectedCapeloes()}
         onUpdateStatus={handleUpdateProductionStatus}
+      />
+
+      {/* Modal de Criação de Evento */}
+      <EventModal
+        isOpen={showEventModal}
+        onClose={() => setShowEventModal(false)}
+        onSave={handleCreateEvent}
+      />
+
+      {/* Modal de Participantes do Evento */}
+      <EventParticipantsModal
+        isOpen={showParticipantsModal}
+        onClose={() => setShowParticipantsModal(false)}
+        event={selectedEvent}
       />
     </div>
   );
